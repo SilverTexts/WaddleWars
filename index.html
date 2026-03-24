@@ -334,7 +334,6 @@ let board = null;
 let roles = null;
 let members = [];
 let activeTab = null;
-let pollTimer = null;
 let filters = { assignee:'', status:'', priority:'' };
 
 // ── PERMISSION HELPER ─────────────────────────────────────────────────────────
@@ -345,20 +344,44 @@ function can(perm) {
 }
 
 // ── STORAGE ───────────────────────────────────────────────────────────────────
-async function loadShared(key) {
-  try { const r = await window.storage.get(key, true); return r ? JSON.parse(r.value) : null; } catch { return null; }
+// ── FIREBASE STORAGE ──────────────────────────────────────────────────────────
+let DB = null; // initialized after Firebase scripts load
+
+// Firebase converts arrays to objects — this restores them recursively
+function fixArrays(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  // Check if it looks like a Firebase-serialized array (keys are 0,1,2...)
+  const keys = Object.keys(obj);
+  const isArr = keys.length > 0 && keys.every(k => /^\d+$/.test(k));
+  if (isArr) {
+    const arr = [];
+    keys.forEach(k => { arr[parseInt(k)] = fixArrays(obj[k]); });
+    return arr;
+  }
+  const out = {};
+  keys.forEach(k => { out[k] = fixArrays(obj[k]); });
+  return out;
 }
+
+async function loadShared(key) {
+  try {
+    const snap = await DB.ref(key).get();
+    if (!snap.exists()) return null;
+    return fixArrays(snap.val());
+  } catch(e) { console.error('loadShared', key, e); return null; }
+}
+
 async function saveShared(key, val, retries=3) {
   for (let i = 0; i < retries; i++) {
     try {
-      await window.storage.set(key, JSON.stringify(val), true);
+      await DB.ref(key).set(val);
       return true;
     } catch(e) {
       if (i < retries - 1) {
-        await new Promise(r => setTimeout(r, 400 * (i + 1))); // backoff: 400ms, 800ms
+        await new Promise(r => setTimeout(r, 400 * (i + 1)));
       } else {
-        showToast('⚠️ Save failed — retrying... please try again');
-        console.error('saveShared failed after retries:', e);
+        showToast('⚠️ Save failed — check connection');
+        console.error('saveShared failed:', e);
         return false;
       }
     }
@@ -522,7 +545,9 @@ async function doLogin() {
 }
 
 function doLogout() {
-  if (pollTimer) clearInterval(pollTimer);
+  DB.ref(SK_BOARD).off();
+  DB.ref(SK_ROLES).off();
+  DB.ref(SK_MEMBERS).off();
   user = null;
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
@@ -546,14 +571,31 @@ async function initApp() {
   populateAssigneeFilter();
   renderAll();
   document.getElementById('loading').classList.add('hidden');
-  pollTimer = setInterval(async () => {
-    const [fb, fr, fm] = await Promise.all([loadShared(SK_BOARD), loadShared(SK_ROLES), loadShared(SK_MEMBERS)]);
-    let changed = false;
-    if (fb && JSON.stringify(fb)!==JSON.stringify(board)) { board=fb; changed=true; }
-    if (fr && JSON.stringify(fr)!==JSON.stringify(roles)) { roles=fr; changed=true; }
-    if (fm && JSON.stringify(fm)!==JSON.stringify(members)) { members=fm; changed=true; }
-    if (changed) { populateAssigneeFilter(); renderAll(); showToast('🔄 Board updated'); }
-  }, 4000);
+
+  // Real-time listeners — update board instantly when any teammate makes a change
+  DB.ref(SK_BOARD).on('value', snap => {
+    if (!snap.exists()) return;
+    const fresh = fixArrays(snap.val());
+    if (board && JSON.stringify(fresh) !== JSON.stringify(board)) {
+      board = fresh;
+      renderAll();
+      showToast('🔄 Board updated');
+    }
+  });
+  DB.ref(SK_ROLES).on('value', snap => {
+    if (!snap.exists()) return;
+    const fresh = fixArrays(snap.val());
+    if (roles && JSON.stringify(fresh) !== JSON.stringify(roles)) {
+      roles = fresh; renderAll();
+    }
+  });
+  DB.ref(SK_MEMBERS).on('value', snap => {
+    if (!snap.exists()) return;
+    const fresh = fixArrays(snap.val());
+    if (members && JSON.stringify(fresh) !== JSON.stringify(members)) {
+      members = fresh; populateAssigneeFilter(); renderAll();
+    }
+  });
 }
 
 function populateAssigneeFilter() {
@@ -1188,18 +1230,32 @@ function showToast(msg) {
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
-(async()=>{
-  try { members=JSON.parse((await window.storage.get(SK_MEMBERS,true))?.value||'[]'); } catch { members=[]; }
-  document.getElementById('loading').classList.add('hidden');
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
 
-  // Ensure admin tab always exists
-  const savedBoard = await loadShared(SK_BOARD);
-  if (savedBoard) {
-    if (!savedBoard.categories.find(c=>c.id==='admin')) {
-      savedBoard.categories.push({id:'admin',label:'⚙️ Admin',color:'#e05252',isAdmin:true,phases:[]});
-      await saveShared(SK_BOARD, savedBoard);
-    }
-  }
+(async()=>{
+  // Load Firebase scripts first, then initialize
+  await loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+  await loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js');
+
+  firebase.initializeApp({
+    apiKey: "AIzaSyDk2jFV6b2HHCcCkyg4lX3mDt5Kx0BOs9U",
+    authDomain: "waddle-wars-gdd-1aa24.firebaseapp.com",
+    databaseURL: "https://waddle-wars-gdd-1aa24-default-rtdb.firebaseio.com",
+    projectId: "waddle-wars-gdd-1aa24",
+    storageBucket: "waddle-wars-gdd-1aa24.firebasestorage.app",
+    messagingSenderId: "98762143854",
+    appId: "1:98762143854:web:2c6e3d8ff8c4b0ce688e7f"
+  });
+  DB = firebase.database();
+
+  try { members = await loadShared(SK_MEMBERS) || []; } catch { members=[]; }
+  document.getElementById('loading').classList.add('hidden');
   initLogin();
 })();
 </script>
