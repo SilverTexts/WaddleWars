@@ -16,7 +16,7 @@
   --cat-color: #1e6080;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;font-size:15px}
 
 /* ── LOADING ── */
 #loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;transition:opacity .4s}
@@ -61,7 +61,7 @@ header{background:linear-gradient(135deg,#0a1c28,var(--surf));border-bottom:2px 
 /* ── NAV ── */
 nav{display:flex;gap:2px;padding:16px 24px 0;flex-wrap:wrap;border-bottom:1px solid var(--border)}
 .tab-wrap{position:relative;display:flex;align-items:flex-end}
-.tab-btn{background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;padding:8px 14px 10px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.tab-btn{background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:10px 16px 12px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--duck);border-bottom-color:var(--duck)}
 .tab-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -88,7 +88,7 @@ nav{display:flex;gap:2px;padding:16px 24px 0;flex-wrap:wrap;border-bottom:1px so
 .filter-clear:hover{color:var(--red)}
 
 /* ── MAIN ── */
-main{padding:24px;max-width:1020px;margin:0 auto}
+main{padding:28px;max-width:1200px;margin:0 auto}
 .section{display:none}.section.active{display:block}
 
 /* ── STATS ── */
@@ -100,7 +100,7 @@ main{padding:24px;max-width:1020px;margin:0 auto}
 /* ── PHASE ── */
 .phase{margin-bottom:24px}
 .phase-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-.phase-title-text{font-family:'Bangers',cursive;font-size:17px;color:var(--beak);letter-spacing:1.5px;text-transform:uppercase;outline:none}
+.phase-title-text{font-family:'Bangers',cursive;font-size:20px;color:var(--beak);letter-spacing:1.5px;text-transform:uppercase;outline:none}
 .phase-title-text[contenteditable=true]:focus{outline:2px solid var(--duck);border-radius:4px;padding:0 4px}
 .phase-badge{background:var(--card);border:1px solid var(--border);border-radius:99px;font-size:10px;color:var(--muted);padding:2px 8px}
 .phase-actions{margin-left:auto;display:flex;gap:4px}
@@ -126,10 +126,10 @@ main{padding:24px;max-width:1020px;margin:0 auto}
 .st-btn.active-done{border-color:var(--done);color:var(--done);background:rgba(58,170,106,.12)}
 
 .task-body{flex:1;min-width:0}
-.task-name{font-size:13px;font-weight:600;color:var(--text);border:none;background:none;font-family:'Syne',sans-serif;width:100%;outline:none;padding:0;line-height:1.4}
+.task-name{font-size:14px;font-weight:600;color:var(--text);border:none;background:none;font-family:'Syne',sans-serif;width:100%;outline:none;padding:0;line-height:1.4}
 .task-name:focus{outline:1px solid var(--duck);border-radius:3px;padding:1px 4px;background:var(--surf)}
 .task.status-done .task-name{text-decoration:line-through;color:var(--muted)}
-.task-note{font-size:11px;color:var(--muted);margin-top:3px;border:none;background:none;font-family:'Syne',sans-serif;width:100%;outline:none;resize:none;padding:0;line-height:1.5}
+.task-note{font-size:12px;color:var(--muted);margin-top:4px;border:none;background:none;font-family:'Syne',sans-serif;width:100%;outline:none;resize:none;padding:0;line-height:1.6}
 .task-note:focus{outline:1px solid var(--border2);border-radius:3px;padding:2px 4px;background:var(--surf)}
 .task-meta{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
 
@@ -248,10 +248,7 @@ main{padding:24px;max-width:1020px;margin:0 auto}
     <h1>WADDLE WARS</h1>
     <p>GDD Team Board</p>
     <input type="text" id="ln-name" placeholder="Your name" maxlength="24"/>
-    <input type="text" id="ln-role" placeholder="Your role (e.g. Scripter, Artist)" maxlength="32"/>
-    <div class="pass-row" id="pass-row">
-      <input type="password" id="ln-pass" placeholder="Access password"/>
-    </div>
+    <input type="password" id="ln-pass" placeholder="Password (leave blank if none)"/>
     <button class="btn-join" onclick="doLogin()">JOIN BOARD</button>
     <div class="login-note" id="ln-note"></div>
   </div>
@@ -486,31 +483,27 @@ async function initLogin() {
   if (members.length) {
     note.innerHTML = 'Online: ' + members.map(m=>`<span>${esc(m.name)}</span>`).join('');
   }
-  // show password field if any role requires one
-  const hasPass = roles.some(r=>r.password);
-  document.getElementById('pass-row').style.display = hasPass ? 'block' : 'none';
-  document.getElementById('ln-name').onkeydown = e=>{ if(e.key==='Enter') doLogin(); };
+  document.getElementById('ln-name').onkeydown = e=>{ if(e.key==='Enter') document.getElementById('ln-pass').focus(); };
   document.getElementById('ln-pass').onkeydown = e=>{ if(e.key==='Enter') doLogin(); };
 }
 
 async function doLogin() {
   const name = document.getElementById('ln-name').value.trim();
-  const roleTitle = document.getElementById('ln-role').value.trim() || 'Team Member';
   const pass = document.getElementById('ln-pass').value;
   if (!name) { document.getElementById('ln-name').focus(); return; }
 
   // Match role by password
   let matchedRole = roles.find(r => r.password && r.password === pass);
-  if (!matchedRole) matchedRole = roles.find(r => !r.password); // default = lowest role
+  if (!matchedRole) matchedRole = roles.find(r => !r.password);
   if (!matchedRole) matchedRole = roles[roles.length-1];
 
-  user = { name, roleTitle, roleId: matchedRole.id };
+  user = { name, roleId: matchedRole.id };
 
   // Save to members
   members = await loadShared(SK_MEMBERS) || [];
   const ex = members.find(m=>m.name.toLowerCase()===name.toLowerCase());
-  if (!ex) members.push({ name, roleTitle, roleId:matchedRole.id, color:COLORS[members.length%COLORS.length] });
-  else { ex.roleTitle=roleTitle; ex.roleId=matchedRole.id; }
+  if (!ex) members.push({ name, roleId:matchedRole.id, color:COLORS[members.length%COLORS.length] });
+  else { ex.roleId=matchedRole.id; }
   await saveShared(SK_MEMBERS, members);
 
   document.getElementById('login-screen').style.display = 'none';
@@ -534,7 +527,6 @@ function doLogout() {
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('ln-name').value='';
-  document.getElementById('ln-role').value='';
   document.getElementById('ln-pass').value='';
   initLogin();
 }
@@ -543,7 +535,11 @@ function doLogout() {
 async function initApp() {
   document.getElementById('loading').classList.remove('hidden');
   board = await loadShared(SK_BOARD) || defaultBoard();
-  if (!(await loadShared(SK_BOARD))) await saveShared(SK_BOARD, board);
+  // Always ensure admin tab exists
+  if (!board.categories.find(c=>c.id==='admin')) {
+    board.categories.push({id:'admin',label:'⚙️ Admin',color:'#e05252',isAdmin:true,phases:[]});
+  }
+  await saveShared(SK_BOARD, board);
   roles = await loadShared(SK_ROLES) || JSON.parse(JSON.stringify(DEFAULT_ROLES));
   if (!(await loadShared(SK_ROLES))) await saveShared(SK_ROLES, roles);
   activeTab = board.categories[0].id;
@@ -1196,11 +1192,13 @@ function showToast(msg) {
   try { members=JSON.parse((await window.storage.get(SK_MEMBERS,true))?.value||'[]'); } catch { members=[]; }
   document.getElementById('loading').classList.add('hidden');
 
-  // Inject admin tab if board already loaded
+  // Ensure admin tab always exists
   const savedBoard = await loadShared(SK_BOARD);
-  if (savedBoard && !savedBoard.categories.find(c=>c.id==='admin')) {
-    savedBoard.categories.push({id:'admin',label:'⚙️ Admin',color:'#e05252',isAdmin:true,phases:[]});
-    await saveShared(SK_BOARD, savedBoard);
+  if (savedBoard) {
+    if (!savedBoard.categories.find(c=>c.id==='admin')) {
+      savedBoard.categories.push({id:'admin',label:'⚙️ Admin',color:'#e05252',isAdmin:true,phases:[]});
+      await saveShared(SK_BOARD, savedBoard);
+    }
   }
   initLogin();
 })();
