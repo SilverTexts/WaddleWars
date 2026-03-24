@@ -347,34 +347,21 @@ function can(perm) {
 // ── FIREBASE STORAGE ──────────────────────────────────────────────────────────
 let DB = null; // initialized after Firebase scripts load
 
-// Firebase converts arrays to objects — this restores them recursively
-function fixArrays(obj) {
-  if (obj === null || typeof obj !== 'object') return obj;
-  // Check if it looks like a Firebase-serialized array (keys are 0,1,2...)
-  const keys = Object.keys(obj);
-  const isArr = keys.length > 0 && keys.every(k => /^\d+$/.test(k));
-  if (isArr) {
-    const arr = [];
-    keys.forEach(k => { arr[parseInt(k)] = fixArrays(obj[k]); });
-    return arr;
-  }
-  const out = {};
-  keys.forEach(k => { out[k] = fixArrays(obj[k]); });
-  return out;
-}
-
 async function loadShared(key) {
   try {
-    const snap = await DB.ref(key).get();
+    const snap = await DB.ref('data/' + key).get();
     if (!snap.exists()) return null;
-    return fixArrays(snap.val());
+    const val = snap.val();
+    // stored as JSON string to avoid Firebase array→object conversion
+    return typeof val === 'string' ? JSON.parse(val) : val;
   } catch(e) { console.error('loadShared', key, e); return null; }
 }
 
 async function saveShared(key, val, retries=3) {
   for (let i = 0; i < retries; i++) {
     try {
-      await DB.ref(key).set(val);
+      // store as JSON string to preserve arrays perfectly
+      await DB.ref('data/' + key).set(JSON.stringify(val));
       return true;
     } catch(e) {
       if (i < retries - 1) {
@@ -545,9 +532,9 @@ async function doLogin() {
 }
 
 function doLogout() {
-  DB.ref(SK_BOARD).off();
-  DB.ref(SK_ROLES).off();
-  DB.ref(SK_MEMBERS).off();
+  DB.ref('data/' + SK_BOARD).off();
+  DB.ref('data/' + SK_ROLES).off();
+  DB.ref('data/' + SK_MEMBERS).off();
   user = null;
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
@@ -573,28 +560,32 @@ async function initApp() {
   document.getElementById('loading').classList.add('hidden');
 
   // Real-time listeners — update board instantly when any teammate makes a change
-  DB.ref(SK_BOARD).on('value', snap => {
+  DB.ref('data/' + SK_BOARD).on('value', snap => {
     if (!snap.exists()) return;
-    const fresh = fixArrays(snap.val());
-    if (board && JSON.stringify(fresh) !== JSON.stringify(board)) {
-      board = fresh;
-      renderAll();
-      showToast('🔄 Board updated');
-    }
+    try {
+      const fresh = JSON.parse(snap.val());
+      if (board && JSON.stringify(fresh) !== JSON.stringify(board)) {
+        board = fresh; renderAll(); showToast('🔄 Board updated');
+      }
+    } catch(e) {}
   });
-  DB.ref(SK_ROLES).on('value', snap => {
+  DB.ref('data/' + SK_ROLES).on('value', snap => {
     if (!snap.exists()) return;
-    const fresh = fixArrays(snap.val());
-    if (roles && JSON.stringify(fresh) !== JSON.stringify(roles)) {
-      roles = fresh; renderAll();
-    }
+    try {
+      const fresh = JSON.parse(snap.val());
+      if (roles && JSON.stringify(fresh) !== JSON.stringify(roles)) {
+        roles = fresh; renderAll();
+      }
+    } catch(e) {}
   });
-  DB.ref(SK_MEMBERS).on('value', snap => {
+  DB.ref('data/' + SK_MEMBERS).on('value', snap => {
     if (!snap.exists()) return;
-    const fresh = fixArrays(snap.val());
-    if (members && JSON.stringify(fresh) !== JSON.stringify(members)) {
-      members = fresh; populateAssigneeFilter(); renderAll();
-    }
+    try {
+      const fresh = JSON.parse(snap.val());
+      if (members && JSON.stringify(fresh) !== JSON.stringify(members)) {
+        members = fresh; populateAssigneeFilter(); renderAll();
+      }
+    } catch(e) {}
   });
 }
 
