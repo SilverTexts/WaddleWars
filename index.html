@@ -27,19 +27,21 @@ body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-he
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 
 /* ── LOGIN ── */
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 25%,#1a3d55 0%,var(–bg) 68%)}
+#login-screen{min-height:100vh;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 25%,#1a3d55 0%,var(–bg) 68%)}
 .login-box{background:var(–surf);border:1px solid var(–border2);border-radius:20px;padding:44px 40px;text-align:center;width:360px;box-shadow:0 24px 64px rgba(0,0,0,.6)}
 .login-duck{font-size:52px;display:block;animation:bob 3s ease-in-out infinite;margin-bottom:10px}
-.login-box h1{font-family:‘Bangers’,cursive;font-size:40px;color:var(–duck);letter-spacing:3px;text-shadow:3px 3px 0 var(–beak)}
+.login-box h1{font-family:‘Bangers’,cursive!important;font-size:40px;color:var(–duck);letter-spacing:3px;text-shadow:3px 3px 0 var(–beak);font-style:normal!important}
 .login-box p{color:var(–muted);font-size:13px;margin:8px 0 22px}
-.login-box input,.login-box select{width:100%;background:var(–card);border:1px solid var(–border2);color:var(–text);font-family:‘Syne’,sans-serif;font-size:14px;padding:11px 14px;border-radius:8px;margin-bottom:10px;outline:none;transition:border-color .2s}
+.login-box input,.login-box select{width:100%;background:var(–card);border:1px solid var(–border2);color:var(–text);font-family:‘Syne’,sans-serif;font-size:14px;padding:11px 14px;border-radius:8px;margin-bottom:10px;outline:none;transition:border-color .2s;-webkit-appearance:none}
 .login-box input:focus,.login-box select:focus{border-color:var(–duck)}
 .login-box select option{background:var(–card)}
 .pass-row{display:none}
-.btn-join{width:100%;background:var(–duck);color:#111;font-family:‘Bangers’,cursive;font-size:20px;letter-spacing:2px;border:none;border-radius:8px;padding:12px;cursor:pointer;box-shadow:0 4px 0 var(–beak);transition:transform .1s,box-shadow .1s}
+.btn-join{width:100%;background:var(–duck);color:#111;font-family:‘Bangers’,cursive!important;font-size:20px;letter-spacing:2px;border:none;border-radius:8px;padding:12px;cursor:pointer;box-shadow:0 4px 0 var(–beak);transition:transform .1s,box-shadow .1s;font-style:normal!important;-webkit-appearance:none}
 .btn-join:active{transform:translateY(4px);box-shadow:none}
 .login-note{margin-top:16px;font-size:11px;color:var(–muted)}
 .login-note span{display:inline-block;background:var(–card);border:1px solid var(–border);border-radius:99px;padding:3px 10px;margin:2px}
+/* force Bangers everywhere it’s used */
+.htitle,.header-title,h1,h2,h3,.phase-title-text,.stat-num,[style*=“Bangers”]{font-style:normal!important}
 
 /* ── APP ── */
 #app{display:none}
@@ -558,7 +560,6 @@ async function doLogin() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('hdr-name').textContent = name;
-  const badge = document.getElementById('hdr-role-badge');
   badge.textContent = matchedRole.name;
   badge.style.background = matchedRole.color+'22';
   badge.style.color = matchedRole.color;
@@ -1238,6 +1239,7 @@ DB = firebase.database();
 
 try { members = await loadShared(SK_MEMBERS) || []; } catch { members=[]; }
 document.getElementById(‘loading’).classList.add(‘hidden’);
+document.getElementById(‘login-screen’).style.display = ‘flex’;
 initLogin();
 })();
 </script>
