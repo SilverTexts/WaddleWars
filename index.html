@@ -1125,7 +1125,7 @@ window.pickEmoji=btn=>{ document.querySelectorAll('#emoji-pick button').forEach(
 function openAddRole() {
   openModal('ADD ROLE',`
     <input id="m-rname" placeholder="Role name *"/>
-    <input id="m-rpass" placeholder="Password (leave blank = no password)" type="password"/>
+    <input id="m-rpass" placeholder="Password" type="password"/>
     <span class="modal-label">Role color</span>
     <div class="swatch-row" id="swatch-role">${SWATCHES.map((s,i)=>`<div class="swatch${i===3?' sel':''}" style="background:${s}" onclick="pickSwatch2(this)"></div>`).join('')}</div>`,
     async()=>{
