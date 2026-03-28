@@ -737,11 +737,11 @@ function confirmDeleteCategory(catId) {
     });
 }
 
-function renderContent() {
+async function renderContent() {
   const main = document.getElementById('main-content');
   const cat = board.categories.find(c=>c.id===activeTab);
   if (!cat) return;
-  if (cat.id==='admin') { renderAdmin(main); return; }
+  if (cat.id==='admin') { await renderAdmin(main); return; }
   if (cat.isOverview) { renderOverview(main); return; }
 
   const noticePerm = !can('edit_task')&&!can('create_task');
@@ -895,7 +895,7 @@ requestAnimationFrame(autoResizeAll);
 }
 
 // ── ADMIN PANEL ───────────────────────────────────────────────────────────────
-function renderAdmin(main) {
+async function renderAdmin(main) {
 if (!can(‘admin’)) { main.innerHTML=`<div class="perm-notice">🔒 Admin panel is restricted to Owners only.</div>`; return; }
 const rolesHtml = roles.map(r=>{
 const permToggles = PERMS.map(p=>` <button class="perm-toggle ${r.perms[p]?'on':''}" onclick="togglePerm('${r.id}','${p}',this)"> ${permLabel(p)} </button>`).join(’’);
@@ -940,7 +940,7 @@ openModal(‘CLEAR HISTORY’, `<p style="color:var(--dim);font-size:13px">Delet
 async () => {
 history = [];
 await saveShared(SK_HISTORY, []);
-renderAdmin(document.getElementById(‘main-content’));
+await renderAdmin(document.getElementById(‘main-content’));
 showToast(‘History cleared’);
 });
 }
@@ -1118,7 +1118,7 @@ const pass=document.getElementById(‘m-rpass’).value;
 const selS=document.querySelector(’#swatch-role .swatch.sel’);
 const color=selS?selS.style.background:’#9b6cf5’;
 roles.push({id:uid(),name,color,password:pass,perms:Object.fromEntries(PERMS.map(p=>[p,false]))});
-await saveShared(SK_ROLES,roles); renderAdmin(document.getElementById(‘main-content’)); showToast(‘Role added ✓’);
+await saveShared(SK_ROLES,roles); await renderAdmin(document.getElementById(‘main-content’)); showToast(‘Role added ✓’);
 });
 setTimeout(()=>document.getElementById(‘m-rname’)?.focus(),50);
 }
@@ -1126,7 +1126,7 @@ window.pickSwatch2=el=>{ document.querySelectorAll(’#swatch-role .swatch’).f
 function confirmDeleteRole(roleId) {
 const role=roles.find(r=>r.id===roleId); if(!role) return;
 openModal(‘DELETE ROLE’,`<p style="color:var(--dim);font-size:13px">Delete role "<strong>${esc(role.name)}</strong>"?</p>`,
-async()=>{ roles=roles.filter(r=>r.id!==roleId); await saveShared(SK_ROLES,roles); renderAdmin(document.getElementById(‘main-content’)); showToast(‘Role deleted’); });
+async()=>{ roles=roles.filter(r=>r.id!==roleId); await saveShared(SK_ROLES,roles); await renderAdmin(document.getElementById(‘main-content’)); showToast(‘Role deleted’); });
 }
 
 function openAddMember() {
@@ -1139,13 +1139,13 @@ const roleTitle=document.getElementById(‘m-mrole’).value.trim()||‘Team Mem
 const roleId=document.getElementById(‘m-mrole-id’).value;
 if(!members.find(m=>m.name.toLowerCase()===name.toLowerCase()))
 members.push({name,roleTitle,roleId,color:COLORS[members.length%COLORS.length]});
-await saveShared(SK_MEMBERS,members); renderAdmin(document.getElementById(‘main-content’)); showToast(‘Member added ✓’);
+await saveShared(SK_MEMBERS,members); await renderAdmin(document.getElementById(‘main-content’)); showToast(‘Member added ✓’);
 });
 setTimeout(()=>document.getElementById(‘m-mname’)?.focus(),50);
 }
 function confirmRemoveMember(name) {
 openModal(‘REMOVE MEMBER’,`<p style="color:var(--dim);font-size:13px">Remove <strong>${esc(name)}</strong> from the team?</p>`,
-async()=>{ members=members.filter(m=>m.name!==name); await saveShared(SK_MEMBERS,members); renderAdmin(document.getElementById(‘main-content’)); showToast(‘Member removed’); });
+async()=>{ members=members.filter(m=>m.name!==name); await saveShared(SK_MEMBERS,members); await renderAdmin(document.getElementById(‘main-content’)); showToast(‘Member removed’); });
 }
 
 function openChangeMemberRole(name) {
@@ -1156,7 +1156,7 @@ async () => {
 const newRoleId = document.getElementById(‘m-new-role’).value;
 m.roleId = newRoleId;
 await saveShared(SK_MEMBERS, members);
-renderAdmin(document.getElementById(‘main-content’));
+await renderAdmin(document.getElementById(‘main-content’));
 showToast(`Role updated for ${name} ✓`);
 });
 }
