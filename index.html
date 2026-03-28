@@ -21,7 +21,7 @@ body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-he
 
 /* ── LOADING ── */
 #loading{position:fixed;inset:0;background:var(–bg);display:flex;align-items:center;justify-content:center;z-index:500;transition:opacity .4s}
-#loading.hidden{opacity:0;pointer-events:none}
+#loading.hidden{opacity:0;pointer-events:none;display:none}
 .spin{font-size:48px;animation:spin 1s linear infinite;display:block;margin-bottom:12px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
@@ -243,7 +243,7 @@ main{padding:14px}
 </head>
 <body>
 
-<div id="loading"><div style="text-align:center"><span class="spin">🦆</span><p style="color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase">Loading...</p></div></div>
+<div id="loading"><div style="text-align:center"><span class="spin" style="font-style:normal">🦆</span><p style="color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase;font-style:normal">Loading...</p></div></div>
 
 <!-- LOGIN -->
 
@@ -1222,25 +1222,54 @@ document.head.appendChild(s);
 });
 }
 
+function hideLoading() {
+const el = document.getElementById(‘loading’);
+el.classList.add(‘hidden’);
+el.style.display = ‘none’;
+}
+
+function showLogin() {
+hideLoading();
+document.getElementById(‘login-screen’).style.display = ‘flex’;
+}
+
 (async()=>{
+// Safety timeout — if Firebase takes more than 8s, show an error
+const timeout = setTimeout(() => {
+hideLoading();
+document.getElementById(‘login-screen’).style.display = ‘flex’;
+document.getElementById(‘ln-note’).innerHTML = ‘<span style="color:var(--red)">⚠️ Connection slow — check internet and refresh</span>’;
+}, 8000);
+
+try {
 await loadScript(‘https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js’);
 await loadScript(‘https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js’);
 
+```
 firebase.initializeApp({
-apiKey: “AIzaSyDk2jFV6b2HHCcCkyg4lX3mDt5Kx0BOs9U”,
-authDomain: “waddle-wars-gdd-1aa24.firebaseapp.com”,
-databaseURL: “https://waddle-wars-gdd-1aa24-default-rtdb.firebaseio.com”,
-projectId: “waddle-wars-gdd-1aa24”,
-storageBucket: “waddle-wars-gdd-1aa24.firebasestorage.app”,
-messagingSenderId: “98762143854”,
-appId: “1:98762143854:web:2c6e3d8ff8c4b0ce688e7f”
+  apiKey: "AIzaSyDk2jFV6b2HHCcCkyg4lX3mDt5Kx0BOs9U",
+  authDomain: "waddle-wars-gdd-1aa24.firebaseapp.com",
+  databaseURL: "https://waddle-wars-gdd-1aa24-default-rtdb.firebaseio.com",
+  projectId: "waddle-wars-gdd-1aa24",
+  storageBucket: "waddle-wars-gdd-1aa24.firebasestorage.app",
+  messagingSenderId: "98762143854",
+  appId: "1:98762143854:web:2c6e3d8ff8c4b0ce688e7f"
 });
 DB = firebase.database();
 
 try { members = await loadShared(SK_MEMBERS) || []; } catch { members=[]; }
-document.getElementById(‘loading’).classList.add(‘hidden’);
-document.getElementById(‘login-screen’).style.display = ‘flex’;
+
+clearTimeout(timeout);
+showLogin();
 initLogin();
+```
+
+} catch(e) {
+console.error(‘Boot failed:’, e);
+clearTimeout(timeout);
+showLogin();
+document.getElementById(‘ln-note’).innerHTML = ‘<span style="color:var(--red)">⚠️ Failed to connect — refresh to try again</span>’;
+}
 })();
 </script>
 
