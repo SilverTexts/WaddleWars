@@ -819,7 +819,7 @@ function renderTask(task, phaseId, ownerOnly=false) {
   <div class="task-meta">
     <select class="p-sel p-${task.priority}" ${prioDis} onchange="updateField('${phaseId}','${task.id}','priority',this.value)">${prioOpts}</select>
     ${can('assign')?`<button class="assignee-chip ${isAssigned?'assigned':''}" onclick="openAssign('${phaseId}','${task.id}')">👤 ${esc(task.assignee||'Assign')}</button>`:''}
-    ${can('set_due')||task.due?`<button class="due-chip ${dueClass}" onclick="${can('set_due')?`openDue('${phaseId}','${task.id}')`:''}"}>📅 ${esc(dueLabel)}</button>`:''}
+    ${can('set_due')||task.due?`<button class="due-chip ${dueClass}" onclick="openDue('${phaseId}','${task.id}')">📅 ${esc(dueLabel)}</button>`:(task.due?`<button class="due-chip ${dueClass}">📅 ${esc(dueLabel)}</button>`:'')}
     ${can('comment')?`<button class="comment-toggle" onclick="toggleComments('${task.id}')">💬 ${commentCount>0?commentCount:''} Comment${commentCount!==1?'s':''}</button>`:''}
   </div>
   <div class="comments-panel" id="comments-${task.id}">
