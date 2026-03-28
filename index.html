@@ -321,10 +321,13 @@ const PRIORITIES = ['critical','high','mid','low'];
 const PERMS = ['create_task','delete_task','edit_task','create_phase','delete_phase','create_category','delete_category','assign','set_due','comment','admin'];
 
 const DEFAULT_ROLES = [
-  { id:'owner', name:'Owner', color:'#f5c842', password:'featherweight', perms: Object.fromEntries(PERMS.map(p=>[p,true])) },
-  { id:'dev',   name:'Dev',   color:'#3b9eff', password:'dev123',        perms: { create_task:true,delete_task:true,edit_task:true,create_phase:true,delete_phase:false,create_category:false,delete_category:false,assign:true,set_due:true,comment:true,admin:false } },
-  { id:'member',name:'Member',color:'#3aaa6a', password:'',              perms: { create_task:false,delete_task:false,edit_task:false,create_phase:false,delete_phase:false,create_category:false,delete_category:false,assign:true,set_due:false,comment:true,admin:false } },
+  { id:'owner', name:'Owner', color:'#f5c842', perms: Object.fromEntries(PERMS.map(p=>[p,true])) },
+  { id:'dev',   name:'Dev',   color:'#3b9eff', perms: { create_task:true,delete_task:true,edit_task:true,create_phase:true,delete_phase:false,create_category:false,delete_category:false,assign:true,set_due:true,comment:true,admin:false } },
+  { id:'member',name:'Member',color:'#3aaa6a', perms: { create_task:false,delete_task:false,edit_task:false,create_phase:false,delete_phase:false,create_category:false,delete_category:false,assign:true,set_due:false,comment:true,admin:false } },
 ];
+
+// Passwords are stored in Firebase only — never in this file
+const SK_PASSWORDS = 'ww-gdd-passwords-v4';
 
 const COLORS = ['#1e6080','#3aaa6a','#f5c842','#e05252','#9b6cf5','#e8920a','#20b2aa','#e07b54'];
 
@@ -486,9 +489,13 @@ function defaultBoard() {
 }
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
+let passwords = {}; // loaded from Firebase — never stored in this file
+
 async function initLogin() {
   roles = await loadShared(SK_ROLES) || JSON.parse(JSON.stringify(DEFAULT_ROLES));
   members = await loadShared(SK_MEMBERS) || [];
+  // Load passwords from Firebase (stored separately, never in HTML)
+  passwords = await loadShared(SK_PASSWORDS) || {};
   const note = document.getElementById('ln-note');
   if (members.length) {
     note.innerHTML = 'Online: ' + members.map(m=>`<span>${esc(m.name)}</span>`).join('');
@@ -499,13 +506,20 @@ async function initLogin() {
 
 async function doLogin() {
   const name = document.getElementById('ln-name').value.trim();
-  const pass = document.getElementById('ln-pass').value;
-  if (!name) { document.getElementById('ln-name').focus(); return; }
+  const pass = document.getElementById('ln-pass').value.trim();
+  if (!name) { document.getElementById('ln-name').focus(); showToast('Enter your name'); return; }
+  if (!pass) { document.getElementById('ln-pass').focus(); showToast('Password required'); return; }
 
-  // Match role by password
-  let matchedRole = roles.find(r => r.password && r.password === pass);
-  if (!matchedRole) matchedRole = roles.find(r => !r.password);
-  if (!matchedRole) matchedRole = roles[roles.length-1];
+  // Match role by password — passwords live in Firebase only
+  const matchedRoleId = Object.keys(passwords).find(roleId => passwords[roleId] === pass);
+  if (!matchedRoleId) {
+    showToast('❌ Incorrect password');
+    document.getElementById('ln-pass').value = '';
+    document.getElementById('ln-pass').focus();
+    return;
+  }
+  const matchedRole = roles.find(r => r.id === matchedRoleId);
+  if (!matchedRole) { showToast('❌ Role not found'); return; }
 
   user = { name, roleId: matchedRole.id };
 
@@ -1230,7 +1244,6 @@ function loadScript(src) {
 }
 
 (async()=>{
-  // Load Firebase scripts first, then initialize
   await loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
   await loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js');
 
